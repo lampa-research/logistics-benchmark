@@ -1,0 +1,9 @@
+[submodule "benchmark/planners/Continuous-CBS"]
+	path = benchmark/planners/Continuous-CBS
+	url = https://github.com/lampa-research/Continuous-CBS.git
+[submodule "benchmark/planners/Flatland-CBS"]
+	path = benchmark/planners/Flatland-CBS
+	url = https://github.com/lampa-research/Flatland-CBS.git
+[submodule "flatland-rl"]
+	path = flatland-rl
+	url = https://github.com/lampa-research/flatland-rl.git

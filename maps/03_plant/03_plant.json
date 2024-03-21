@@ -1,0 +1,35 @@
+{
+  "map": "03_plant_a.tmx",
+  "number_of_steps": 100,
+  "number_of_repetitions": 1,
+  "dispatcher": {
+    "type": "DispatcherClosestFree"
+  },
+  "releaser": {
+    "type": "ReleaserPool",
+    "pool_size": 1
+  },
+  "task_generators": [
+    {
+      "type": "TaskGeneratorAnyFree",
+      "pick_ups": [[6, 1], [7, 1], [9, 1], [10, 1], [11, 1], [8, 5], [9, 5], [11, 5], [12, 5]],
+      "drop_offs": [[6, 7], [6, 9], [6, 10], [1, 27], [2, 27]]
+    },
+    {
+      "type": "TaskGeneratorAnyFree",
+      "pick_ups": [[6, 7], [6, 9], [6, 10]],
+      "drop_offs": [[1, 27], [2, 27]]
+    },
+    {
+      "type": "TaskGeneratorAnyFree",
+      "pick_ups": [[13, 3], [3, 17], [3, 19], [3, 20], [3, 21], [3, 22], [3, 24], [3, 25]],
+      "drop_offs": [[5, 1], [7, 5]]
+    }
+  ],
+  "planner": {
+    "type": "PlannerCCBS"
+  },
+  "visualize": "True",
+  "directed": "True",
+  "turn_in_place": "True"
+}

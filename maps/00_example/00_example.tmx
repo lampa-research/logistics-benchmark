@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="6" height="8" tilewidth="32" tileheight="32" infinite="0" nextlayerid="6" nextobjectid="1">
+ <tileset firstgid="1" source="../benchmark.tsx"/>
+ <layer id="1" name="Roadmap" width="6" height="8">
+  <data encoding="csv">
+0,0,4,4,4,4,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0
+</data>
+ </layer>
+ <layer id="2" name="Walls" width="6" height="8">
+  <data encoding="csv">
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,25,25,0,0,
+0,0,25,25,0,0,
+0,0,25,25,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0
+</data>
+ </layer>
+ <layer id="3" name="Stations" width="6" height="8">
+  <data encoding="csv">
+0,0,0,0,0,0,
+29,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,30,
+0,0,0,0,0,30,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+29,0,0,0,0,0
+</data>
+ </layer>
+ <layer id="4" name="SafeSpaces" width="6" height="8">
+  <data encoding="csv">
+0,0,26,26,26,26,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0
+</data>
+ </layer>
+ <layer id="5" name="Agents" width="6" height="8">
+  <data encoding="csv">
+0,0,27,27,27,27,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0
+</data>
+ </layer>
+</map>
