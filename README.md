@@ -15,6 +15,7 @@ Initialize the submodules.
 
 ``` text
 git submodule init
+git submodule update
 ```
 
 Create and activate a virtual environment (Conda or Miniconda recommended):
