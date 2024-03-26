@@ -140,11 +140,11 @@ class Simulation():
 
                     if tg_desc["type"] == "TaskGeneratorAnyFree":
                         self.task_generators.append(TaskGeneratorAnyFree(
-                            pick_ups, drop_offs, self.env, self.agvs))
+                            pick_ups, drop_offs, self.env, self.agvs, tg_desc["time_buffer_min"], tg_desc["time_buffer_max"]))
                     elif tg_desc["type"] == "TaskGeneratorPoisson":
                         average_tick_next = tg_desc["average_tick_next"]
                         self.task_generators.append(TaskGeneratorPoisson(
-                            pick_ups, drop_offs, self.env, average_tick_next))
+                            pick_ups, drop_offs, self.env, average_tick_next, tg_desc["time_buffer_min"], tg_desc["time_buffer_max"]))
                 if self.settings["planner"]["type"] == "PlannerCBS":
                     self.planner = PlannerCBS(self.env)
                 elif self.settings["planner"]["type"] == "PlannerCCBS":
@@ -230,6 +230,7 @@ class Simulation():
         # if at drop_off - task completed, set task_in_work to None
         for i in range(len(self.env.agents)):
             if self.agvs[i].task_in_work != None and self.env.agents[i].position == self.agvs[i].task_in_work.drop_off and self.env.agents[i].state == TrainState.DONE:
+                self.agvs[i].delays.append(self.env._elapsed_steps - self.agvs[i].task_in_work.deadline)
                 self.agvs[i].task_in_work = None
                 self.tasks_executed += 1
                 print(
@@ -364,7 +365,7 @@ class Simulation():
         # Save gif
         if self.renderer is not None:
             imageio.mimsave(os.path.dirname(self.filename) +
-                            "/" + "demo.gif", self.frames, duration=0.05)
+                            "/" + "animation.gif", self.frames, duration=0.05)
             print("GIF saved.")
             self.renderer.close_window()
 

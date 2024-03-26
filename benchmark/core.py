@@ -20,6 +20,7 @@ class AGV():
         self.deadline = 0  # deadline for the task being executed
         self.going_to_safe_space = False
         self.last_task_in_queue = None
+        self.delays = [] # a list of delays for completed tasks
 
     def assign_task(self, t: Task):
         self.tasks.put(t)
