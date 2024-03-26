@@ -54,9 +54,6 @@ class MARLEnv(MultiAgentEnv):
 
         self._step += 1
 
-        self.prnt(f'*** Tick next: {self._sim.task_generators[0].tick_next}, Elapsed steps: {self._sim.env._elapsed_steps}')
-        input()
-
         return obs_dict, info_dict
 
     def step(
@@ -139,6 +136,9 @@ class MARLEnv(MultiAgentEnv):
             # assign to the agent (dispatch)
             self._sim.agvs[agent_id].assign_task(self._tasks[-1])
             self._tasks.pop()
+        else:
+            self._sim.generate_tasks()
+            self._sim.releaser.get_tasks()
 
         # step agents
         # while _tasks empty
