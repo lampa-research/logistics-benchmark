@@ -211,6 +211,11 @@ class Simulation():
             agv = AGV()
             self.agvs.append(agv)
 
+        # reset releaser and task generators
+        self.releaser.tick_next = 0
+        for tg in self.task_generators:
+            tg.tick_next = 0
+
         self.tasks_executed = 0
         self.average_runtime = 0
         self.successful_plannings = 0
