@@ -1,6 +1,6 @@
 {
   "map": "00_example_a.tmx",
-  "number_of_steps": 100,
+  "number_of_steps": 1000,
   "number_of_repetitions": 1,
   "dispatcher": {
     "type": "DispatcherClosestFree"
@@ -11,9 +11,10 @@
   },
   "task_generators": [
     {
-      "type": "TaskGeneratorAnyFree",
+      "type": "TaskGeneratorPoisson",
       "pick_ups": "pick_ups",
       "drop_offs": "drop_offs",
+      "average_tick_next": 10,
       "time_buffer_min": 10,
       "time_buffer_max": 50
     }
@@ -21,7 +22,7 @@
   "planner": {
     "type": "PlannerCCBS"
   },
-  "visualize": "True",
+  "visualize": "False",
   "directed": "True",
   "turn_in_place": "True"
 }
