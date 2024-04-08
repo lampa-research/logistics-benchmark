@@ -1,5 +1,7 @@
 from typing import Optional, Tuple
+import os
 import random
+import shutil
 import sys
 import numpy as np
 
@@ -8,6 +10,50 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
 from benchmark.simulation import Simulation
 
+
+def save_config(
+        config_file_path: str,
+        experiment_name: str,
+        log_dir: str) -> None:
+    '''
+    Copies the provided file to a specific directory for the experiment.
+    Creates a subfolder for the experiment and copies the config file into it.
+    The name of the file is preserved.
+    '''
+
+    log_dir = os.path.expanduser(log_dir)
+    # Add subfolder for experiment
+    log_dir = os.path.join(log_dir, experiment_name)
+
+    print(log_dir)
+    input("Press Enter to continue...")
+    # If path does not exist, create it
+    if not os.path.exists(log_dir):
+        try:
+            os.makedirs(log_dir)
+        except OSError as err:
+            print("Error:", err)
+            sys.exit(1)
+
+    # Check if folder exists
+    if not os.path.isdir(log_dir):
+        print("Error: Path is not a directory.")
+        sys.exit(1)
+
+    # Determine the filename from the provided path
+    file_name = os.path.basename(config_file_path)
+    destination_path = os.path.join(log_dir, file_name)
+
+    # Copy the file
+    try:
+        shutil.copy(config_file_path, destination_path)
+        print(f'{file_name} copied to {log_dir}')
+    except FileNotFoundError as err:
+        print("Error:", err)
+        sys.exit(1)
+    except Exception as err:
+        print(f"Error: {err}")
+        sys.exit(1)
 
 class MARLEnv(MultiAgentEnv):
     """    Environment for MARL using FMS simulation.    """
@@ -37,6 +83,13 @@ class MARLEnv(MultiAgentEnv):
 
         # Inicializacija (RL) agentov
         self._agent_ids = list(range(len(self._sim.agvs)))
+
+        # Save config file
+        save_config(
+            config_file_path=self._config['filename'],
+            experiment_name=self._config['experiment_name'],
+            log_dir=self._config['log_dir']
+        )
 
     def reset(self, *, seed=None, options=None) -> Tuple[MultiAgentDict, MultiAgentDict]:
         """ Resets the environment. """
@@ -85,19 +138,24 @@ class MARLEnv(MultiAgentEnv):
         rewards_dict = {}
         for agent_id in self._agent_ids:
             delays = self._sim.agvs[agent_id].delays
-            delays = [delay if delay > 0 else 0 for delay in delays] # keep positive delays
-            delays = [0.01 * delay if delay < 100 else 100 for delay in delays] # clip to 100 and scale to 1
-            delays = [-delay for delay in delays] # make them negative
-            rewards_dict[agent_id] = np.average(delays) if delays else 0 # average
+            # keep positive delays
+            delays = [delay if delay > 0 else 0 for delay in delays]
+            # clip to 100 and scale to 1
+            delays = [0.01 * delay if delay < 100 else 100 for delay in delays]
+            delays = [-delay for delay in delays]  # make them negative
+            rewards_dict[agent_id] = np.average(
+                delays) if delays else 0  # average
             self._sim.agvs[agent_id].delays = []
 
         rewards_dict_copy = rewards_dict.copy()
         for agent_id, reward in rewards_dict_copy.items():
-            share = reward / len(rewards_dict_copy) # calculate share for current agent
+            # calculate share for current agent
+            share = reward / len(rewards_dict_copy)
             for other_agent_id in rewards_dict:
                 if other_agent_id != agent_id:
-                    rewards_dict[agent_id] += share # add the share to other agents
-        
+                    # add the share to other agents
+                    rewards_dict[agent_id] += share
+
         return rewards_dict
 
     def get_info(self, obs_dict: MultiAgentDict) -> MultiAgentDict:

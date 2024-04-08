@@ -1,3 +1,5 @@
+
+import datetime
 import os
 import random
 
@@ -9,21 +11,28 @@ from gymnasium.spaces import Box
 
 from marl.marl_environment import MARLEnv
 
-filename = os.getcwd() + "/maps/00_example/00_example.json"
 
 
 def one_policy_mapping_fn(agent_id, episode, worker):
     ''' Return policy_0. '''
     return "policy_0"
 
+os.environ.setdefault("RAY_DEDUP_LOGS", "0")
 
 for i in range(1):
 
+    experiment_name = "LogisticsBenchmarkTest_" + \
+        datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    LOG_DIR = "~/ray_results"
+    CONFIG_FILE = os.getcwd() + "/maps/00_example/00_example.json"
+
     env_config = {
-        'filename': filename,
+        'filename': CONFIG_FILE,
         # "ep_len": 500,  # number of steps = tasks per episode
         "verbose": True,
         # "shared_reward": True,
+        "log_dir": LOG_DIR,
+        "experiment_name": experiment_name,
     }
 
     config = (
@@ -70,7 +79,8 @@ for i in range(1):
     tune.Tuner(
         "PPO",
         run_config=air.RunConfig(
-            name="LogisticsBenchmarkTest",
+            name=experiment_name,
+            local_dir=os.path.expanduser(LOG_DIR),
             stop={"training_iteration": 100},
             verbose=3,
             # checkpoint_config=air.CheckpointConfig(checkpoint_frequency=50)
