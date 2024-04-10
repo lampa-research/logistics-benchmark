@@ -28,7 +28,7 @@ for i in range(1):
 
     env_config = {
         'filename': CONFIG_FILE,
-        # "ep_len": 500,  # number of steps = tasks per episode
+        "ep_len": 500,  # number of steps = tasks per episode
         "verbose": True,
         # "shared_reward": True,
         "log_dir": LOG_DIR,
@@ -61,8 +61,9 @@ for i in range(1):
                 "policy_0": (
                     None,
                     Box(
-                        low=np.array([0, 0, 0, 0, 0, 0]),
-                        high=np.array([100, 100, 100, 100, 100, 100]),
+                        low=np.array([0, 0, 0, 0, 0, 0], dtype=np.int32),
+                        high=np.array([100, 100, 100, 100, 100, 100], dtype=np.int32),
+                        shape=(6,),
                         dtype=np.int32,),
                     Box(
                         low=0,

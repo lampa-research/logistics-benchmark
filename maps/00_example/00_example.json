@@ -3,7 +3,7 @@
   "number_of_steps": 1000,
   "number_of_repetitions": 1,
   "dispatcher": {
-    "type": "DispatcherClosestFree"
+    "type": "DispatcherExplicit"
   },
   "releaser": {
     "type": "ReleaserPool",
