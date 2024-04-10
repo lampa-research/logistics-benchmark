@@ -69,10 +69,10 @@ class MARLEnv(MultiAgentEnv):
         super().__init__()
 
         self.observation_space = Box(
-            low=np.array([0, 0, 0, 0, 0, 0], dtype=np.int32),
-            high=np.array([100, 100, 100, 100, 100, 100], dtype=np.int32),
+            low=np.array([0, 0, 0, 0, 0, 0], dtype=np.float32),
+            high=np.array([1, 1, 1, 1, 1, 1], dtype=np.float32),
             shape=(6,),
-            dtype=np.int32,
+            dtype=np.float32,
         )
         self.action_space = Box(
             low=0, high=1, shape=(1,), dtype=np.float32)
@@ -91,6 +91,31 @@ class MARLEnv(MultiAgentEnv):
 
         # Inicializacija (RL) agentov
         self._agent_ids = list(range(len(self._sim.agvs)))
+        self.max_queue_length = self._config['max_queue_length'] if 'max_queue_length' in self._config else 10
+
+        # Environment properties (for obs)
+        self.max_distance_roadmap = 0
+        for start, loc in self._sim.shortest_path_lengths.items():
+            for distance in loc.values():
+                if distance > self.max_distance_roadmap:
+                    self.max_distance_roadmap = distance
+                    print(f'start: {start} loc: {loc}, distance: {distance}')
+        self.max_distance_stations = 0
+        self.min_distance_pick_up_drop_off = 1000000
+        self.max_distance_pick_up_drop_off = 0
+        for pick_up in self._sim.layout.pick_ups + self._sim.layout.pick_up_drop_offs:
+            for drop_off in self._sim.layout.pick_up_drop_offs + self._sim.layout.drop_offs:
+                distance = self._sim.shortest_path_lengths[pick_up][drop_off]
+                if distance < self.min_distance_pick_up_drop_off and distance != 0:
+                    self.min_distance_pick_up_drop_off = distance
+                if distance > self.max_distance_pick_up_drop_off:
+                    self.max_distance_pick_up_drop_off = distance
+        self.max_distance_stations = self.max_distance_pick_up_drop_off
+        for drop_off in self._sim.layout.pick_up_drop_offs + self._sim.layout.drop_offs:
+            for pick_up in self._sim.layout.pick_ups + self._sim.layout.pick_up_drop_offs:
+                distance = self._sim.shortest_path_lengths[drop_off][pick_up]
+                if distance > self.max_distance_stations:
+                    self.max_distance_stations = distance
 
         # Save config file
         save_config(
@@ -231,13 +256,13 @@ class MARLEnv(MultiAgentEnv):
             obs_dict[agent_id] = np.zeros(self.observation_space.shape[0])
             agent_position = self._sim.env.agents[agent_id].position
             # OBSERVATION 1: distance to pick-up
-            obs_dict[agent_id][0] = self._sim.shortest_path_lengths[agent_position][current_task.pick_up]
+            obs_dict[agent_id][0] = self._sim.shortest_path_lengths[agent_position][current_task.pick_up] / self.max_distance_roadmap
 
             # OBSERVATION 2: shortest distance for all tasks in AGV queue
             shortest_distance_for_tasks = 0
             task_in_work = self._sim.agvs[agent_id].task_in_work
             if task_in_work:
-                # first add distance for finnishing the task in work
+                # first add distance for finishing the task in work
                 shortest_distance_for_tasks += self._sim.shortest_path_lengths[agent_position][task_in_work.drop_off]
                 # then add distances for all tasks in queue
                 queue = list(self._sim.agvs[agent_id].tasks.queue)
@@ -247,12 +272,13 @@ class MARLEnv(MultiAgentEnv):
                         shortest_distance_for_tasks += self._sim.shortest_path_lengths[last_drop_off][task.pick_up]
                         shortest_distance_for_tasks += self._sim.shortest_path_lengths[task.pick_up][task.drop_off]
                         last_drop_off = task.drop_off
-            obs_dict[agent_id][1] = shortest_distance_for_tasks
+            obs_dict[agent_id][1] = shortest_distance_for_tasks / (2 * self.max_queue_length * self.max_distance_stations)
             shortest_distances_for_tasks.append(shortest_distance_for_tasks)
 
             # OBSERVATION 3: task due (from current step)
-            obs_dict[agent_id][2] = current_task.deadline - \
-                self._sim.env._elapsed_steps
+            min_time = self.min_distance_pick_up_drop_off + self._sim.task_generators[0].time_buffer_min
+            max_time = self.max_distance_pick_up_drop_off + self._sim.task_generators[0].time_buffer_max
+            obs_dict[agent_id][2] = ((current_task.deadline - self._sim.env._elapsed_steps) - min_time) / (max_time - min_time)
 
             # OBSERVATION 4: task distance (pick-up to drop-off)
             obs_dict[agent_id][3] = self._sim.shortest_path_lengths[current_task.pick_up][current_task.drop_off]
