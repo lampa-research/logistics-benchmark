@@ -84,25 +84,31 @@ class MARLEnv(MultiAgentEnv):
 
         self._sim = Simulation(self._config['filename'])
         self._tasks = []
-        self._step = 0
+        self._step = 0  # one step is one task
 
-        self._max_iterations = 200
-        self._max_steps = self._config['ep_len'] if 'ep_len' in self._config else 500
+        self._max_sim_steps = self._config['number_of_steps'] \
+            if 'number_of_steps' in self._config else 1000        # max tasks
+        self._max_steps = self._config['ep_len'] \
+            if 'ep_len' in self._config else 500
 
         # Inicializacija (RL) agentov
         self._agent_ids = list(range(len(self._sim.agvs)))
-        self.max_queue_length = self._config['max_queue_length'] if 'max_queue_length' in self._config else 10
+        self._max_queue_length = self._config['max_queue_length'] \
+            if 'max_queue_length' in self._config else 10
+        self._longest_queue = 0
 
         # Environment properties (for obs)
         self.max_distance_roadmap = 0
+        # Find max distance in roadmap
         for start, loc in self._sim.shortest_path_lengths.items():
             for distance in loc.values():
                 if distance > self.max_distance_roadmap:
                     self.max_distance_roadmap = distance
-                    print(f'start: {start} loc: {loc}, distance: {distance}')
+                    # print(f'start: {start} loc: {loc}, distance: {distance}')
         self.max_distance_stations = 0
         self.min_distance_pick_up_drop_off = 1000000
         self.max_distance_pick_up_drop_off = 0
+        # Find max and min distance between pick-up and drop-off stations
         for pick_up in self._sim.layout.pick_ups + self._sim.layout.pick_up_drop_offs:
             for drop_off in self._sim.layout.pick_up_drop_offs + self._sim.layout.drop_offs:
                 distance = self._sim.shortest_path_lengths[pick_up][drop_off]
@@ -110,6 +116,7 @@ class MARLEnv(MultiAgentEnv):
                     self.min_distance_pick_up_drop_off = distance
                 if distance > self.max_distance_pick_up_drop_off:
                     self.max_distance_pick_up_drop_off = distance
+        # Find max distance between all stations
         self.max_distance_stations = self.max_distance_pick_up_drop_off
         for drop_off in self._sim.layout.pick_up_drop_offs + self._sim.layout.drop_offs:
             for pick_up in self._sim.layout.pick_ups + self._sim.layout.pick_up_drop_offs:
@@ -129,10 +136,11 @@ class MARLEnv(MultiAgentEnv):
         self._sim.soft_reset()
         self._tasks = []
         self._step = 0
+        self._longest_queue = 0
         self.prnt(
             f'\n===== Resetting environment ... \
-                step: {self._step}, iteration: {self._sim.env._elapsed_steps}, \
-                    max_iter = {self._max_iterations}')
+                step: {self._step}, simulation elapsed steps: {self._sim.env._elapsed_steps}, \
+                    max_iter = {self._max_sim_steps}')
 
         obs_dict, info_dict = {}, {}
         obs_dict = self.get_obs()
@@ -151,8 +159,8 @@ class MARLEnv(MultiAgentEnv):
     ]:
         self.prnt(
             f'\n===== Stepping environment ... \
-                step: {self._step}, iteration: {self._sim.env._elapsed_steps}, \
-                    max_iter = {self._max_iterations}')
+                step: {self._step}, simulation elapsed steps: {self._sim.env._elapsed_steps}, \
+                    max_iter = {self._max_sim_steps}')
         self.prnt(f'action_dict: {action_dict}')
 
         # Execute actions
@@ -161,25 +169,35 @@ class MARLEnv(MultiAgentEnv):
         info_dict = self.get_info(obs_dict)
 
         # Check termination conditions
-        done_dict = ({"__all__": False} if (
-            self._sim.env._elapsed_steps < self._max_iterations and
-            self._step < self._max_steps) else {"__all__": True})
+        done_dict = {"__all__": False}
+
+        
 
         self._step += 1
 
+
+        if self._step > self._max_steps:
+            done_dict = {"__all__": True}
+        elif self._sim.env._elapsed_steps > self._max_sim_steps:
+            done_dict = {"__all__": True}
+            for agent_id in reward_dict:
+                reward_dict[agent_id] -= 5
+        
+
         return obs_dict, reward_dict, done_dict, {"__all__": False}, info_dict
 
-    def get_rewards(self):
+    def get_rewards(self) -> MultiAgentDict:
+        ''' Calculate rewards for agents. '''
         rewards_dict = {}
         for agent_id in self._agent_ids:
             delays = self._sim.agvs[agent_id].delays
             # keep positive delays
             delays = [delay if delay > 0 else 0 for delay in delays]
-            # clip to 100 and scale to 1
-            delays = [0.01 * delay if delay < 100 else 100 for delay in delays]
-            delays = [-delay for delay in delays]  # make them negative
-            rewards_dict[agent_id] = np.average(
-                delays) if delays else 0  # average
+            # average delays
+            delay = np.average(delays) if delays else 0
+            # clip to [0, 100]
+            delay = np.clip(delay, 0, 100)
+            rewards_dict[agent_id] = -delay
             self._sim.agvs[agent_id].delays = []
 
         rewards_dict_copy = rewards_dict.copy()
@@ -189,7 +207,15 @@ class MARLEnv(MultiAgentEnv):
             for other_agent_id in rewards_dict:
                 if other_agent_id != agent_id:
                     # add the share to other agents
-                    rewards_dict[agent_id] += share
+                    rewards_dict[other_agent_id] += share
+
+        # Normalize rewards (linearly from -1 to 0)
+        max_delay = 200
+        for agent_id, reward in rewards_dict.items():
+            reward = np.clip(reward, -max_delay, 0)
+            rewards_dict[agent_id] = reward / max_delay
+
+        self.prnt(f'rewards_dict: {rewards_dict}')
 
         return rewards_dict
 
@@ -250,14 +276,21 @@ class MARLEnv(MultiAgentEnv):
         # prepare observations for current task
         obs_dict = {}
 
-        shortest_distances_for_tasks = []
+        self._longest_queue = 0
+        shortest_distances_normalized = []
+        shortest_distances_normalization_factor = 2 * \
+            self._max_queue_length * self.max_distance_stations
+        print(
+            f'shortest_distances_normalization_factor: {shortest_distances_normalization_factor}')
         for agent_id in self._agent_ids:
             # initialize observations for agent
             obs_dict[agent_id] = np.zeros(self.observation_space.shape[0])
             agent_position = self._sim.env.agents[agent_id].position
             # OBSERVATION 1: distance to pick-up
-            obs_dict[agent_id][0] = self._sim.shortest_path_lengths[agent_position][current_task.pick_up] / self.max_distance_roadmap
+            obs_dict[agent_id][0] = self._sim.shortest_path_lengths[agent_position][current_task.pick_up] / \
+                self.max_distance_roadmap
 
+            tasks_in_work = 0
             # OBSERVATION 2: shortest distance for all tasks in AGV queue
             shortest_distance_for_tasks = 0
             task_in_work = self._sim.agvs[agent_id].task_in_work
@@ -269,48 +302,54 @@ class MARLEnv(MultiAgentEnv):
                 if queue:
                     last_drop_off = task_in_work.drop_off
                     for task in queue:
+                        tasks_in_work += 1
                         shortest_distance_for_tasks += self._sim.shortest_path_lengths[last_drop_off][task.pick_up]
                         shortest_distance_for_tasks += self._sim.shortest_path_lengths[task.pick_up][task.drop_off]
                         last_drop_off = task.drop_off
-            obs_dict[agent_id][1] = shortest_distance_for_tasks / (2 * self.max_queue_length * self.max_distance_stations)
-            shortest_distances_for_tasks.append(shortest_distance_for_tasks)
+            if tasks_in_work > self._longest_queue:
+                self._longest_queue = tasks_in_work
+            print(f'tasks_in_work: {tasks_in_work}')
+            print(
+                f'shortest_distance_for_tasks: {shortest_distance_for_tasks}')
+            shortest_distance_normalized = shortest_distance_for_tasks / \
+                shortest_distances_normalization_factor
+            obs_dict[agent_id][1] = shortest_distance_normalized
+            shortest_distances_normalized.append(shortest_distance_normalized)
 
             # OBSERVATION 3: task due (from current step)
-            min_time = self.min_distance_pick_up_drop_off + self._sim.task_generators[0].time_buffer_min
-            max_time = self.max_distance_pick_up_drop_off + self._sim.task_generators[0].time_buffer_max
-            obs_dict[agent_id][2] = ((current_task.deadline - self._sim.env._elapsed_steps) - min_time) / (max_time - min_time)
+            min_time = self.min_distance_pick_up_drop_off + \
+                self._sim.task_generators[0].time_buffer_min
+            max_time = self.max_distance_pick_up_drop_off + \
+                self._sim.task_generators[0].time_buffer_max
+            obs_dict[agent_id][2] = (
+                (current_task.deadline - self._sim.env._elapsed_steps) - min_time) / (max_time - min_time)
 
             # OBSERVATION 4: task distance (pick-up to drop-off)
-            obs_dict[agent_id][3] = self._sim.shortest_path_lengths[current_task.pick_up][current_task.drop_off]
+            obs_dict[agent_id][3] = self._sim.shortest_path_lengths[current_task.pick_up][current_task.drop_off] / \
+                self.max_distance_stations
 
         for agent_id in self._agent_ids:
             remaining_shortest_distances = [d for i, d in enumerate(
-                shortest_distances_for_tasks) if i != agent_id]
+                shortest_distances_normalized) if i != agent_id]
             # OBSERVATION 5: minimum of distance for all tasks in AGV queue (all agents except i)
             obs_dict[agent_id][4] = min(
                 remaining_shortest_distances, default=0)
             # OBSERVATION 6: average of distance for all tasks in AGV queue (all agents except i)
-            average_shortest_distance = int(sum(remaining_shortest_distances) / len(
-                remaining_shortest_distances)) if remaining_shortest_distances else 0
+            average_shortest_distance = sum(remaining_shortest_distances) / len(
+                remaining_shortest_distances) if remaining_shortest_distances else 0
             obs_dict[agent_id][5] = average_shortest_distance
 
-        # # Get observations
-        # obs_dict = {}
-        # for amr in self.sim.agvs:
-        #     obs = np.array(amr.get_observations())
-        #     # Mask out zeros and convert to log2
-        #     log2_obs = obs.copy()  # Copy obs to a new array
-        #     mask = obs != 0  # Define the mask
-        #     # Apply the mask and the log2 transformation
-        #     log2_obs[mask] = np.log2(obs[mask])
-        #     obs_dict[amr.get_id()] = log2_obs.astype(
-        #         np.int32)  # Store the result
+        # Clip all observations to [0, 1]
+        for agent_id, obs in obs_dict.items():
+            obs_dict[agent_id] = np.clip(obs, 0.0, 1.0)
 
         self.prnt(f'obs_dict: {obs_dict}')
 
-        # convert from np.int64 to np.int32 and clip to [0, 100] # TODO: check if this is needed
-        for k, v in obs_dict.items():
-            obs_dict[k] = np.clip(v, 0, 100).astype(np.int32)
+        # For DEBUGGING: check if any obs > 1
+        for agent_id, obs in obs_dict.items():
+            if np.any(obs > 1):
+                debugging_stop(
+                    f'Error: obs > 1 for agent {agent_id}. Obs: {obs}')
 
         return obs_dict
 
@@ -318,3 +357,11 @@ class MARLEnv(MultiAgentEnv):
         """ Print if verbose. """
         if self._verbose:
             print(print_input)
+
+    def get_sim_iterations(self) -> int:
+        """ Get number of simulation iterations."""
+        return self._sim.env._elapsed_steps
+
+    def get_longest_queue(self) -> int:
+        """ Get longest queue."""
+        return self._longest_queue
