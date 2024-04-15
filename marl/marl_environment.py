@@ -86,8 +86,8 @@ class MARLEnv(MultiAgentEnv):
         self._tasks = []
         self._step = 0  # one step is one task
 
-        self._max_sim_steps = self._config['number_of_steps'] \
-            if 'number_of_steps' in self._config else 1000        # max tasks
+        self._max_sim_steps = self._sim.settings["number_of_steps"] \
+            if 'number_of_steps' in self._sim.settings else 1000        # max tasks
         self._max_steps = self._config['ep_len'] \
             if 'ep_len' in self._config else 500
 
@@ -130,6 +130,10 @@ class MARLEnv(MultiAgentEnv):
             experiment_name=self._config['experiment_name'],
             log_dir=self._config['log_dir']
         )
+
+        # Test metrics
+        self.metric_delay_dict = {}
+        self.metric_queue_len_dict = {}
 
     def reset(self, *, seed=None, options=None) -> Tuple[MultiAgentDict, MultiAgentDict]:
         """ Resets the environment. """
@@ -188,6 +192,9 @@ class MARLEnv(MultiAgentEnv):
 
     def get_rewards(self) -> MultiAgentDict:
         ''' Calculate rewards for agents. '''
+
+        self.save_task_generator_metrics()
+
         rewards_dict = {}
         for agent_id in self._agent_ids:
             delays = self._sim.agvs[agent_id].delays
@@ -365,3 +372,17 @@ class MARLEnv(MultiAgentEnv):
     def get_longest_queue(self) -> int:
         """ Get longest queue."""
         return self._longest_queue
+
+    def save_task_generator_metrics(self):
+        for agent_id in self._agent_ids:
+            if agent_id in self.metric_delay_dict:
+                self.metric_delay_dict[agent_id] += self._sim.agvs[agent_id].delays
+                self.metric_queue_len_dict[agent_id].append(len(
+                    list(self._sim.agvs[agent_id].tasks.queue)))
+            else:
+                self.metric_delay_dict[agent_id] = self._sim.agvs[agent_id].delays
+                self.metric_queue_len_dict[agent_id] = [len(
+                    list(self._sim.agvs[agent_id].tasks.queue))]
+
+    def get_task_generator_metrics(self):
+        return self.metric_queue_len_dict, self.metric_delay_dict

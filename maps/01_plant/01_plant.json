@@ -1,9 +1,9 @@
 {
   "map": "01_plant_a.tmx",
-  "number_of_steps": 1000,
+  "number_of_steps": 10000,
   "number_of_repetitions": 1,
   "dispatcher": {
-    "type": "DispatcherClosestFree"
+    "type": "DispatcherExplicit"
   },
   "releaser": {
     "type": "ReleaserPool",
@@ -11,38 +11,42 @@
   },
   "task_generators": [
     {
-      "type": "TaskGeneratorAnyFree",
+      "type": "TaskGeneratorPoisson",
       "pick_ups": [[1, 8], [2, 8], [7, 10], [9, 10]],
       "drop_offs": [[29,0], [30, 0], [31, 0], [3, 11], [3, 12], [3, 13], [15,10], [16, 10], [17, 10], [18, 10], [15, 13], [16, 13], [19, 13], [22, 13], [31, 14], [32, 14], [12, 15], [12, 23], [13, 24], [19, 15], [19, 26], [20, 28], [21, 15], [21, 23], [26, 15], [26, 23], [27, 24], [28, 15], [28, 23], [33, 15], [33, 23], [34, 24], [35, 15], [35, 23]],
+      "average_tick_next": 70,
       "time_buffer_min": 10,
-      "time_buffer_max": 50
+      "time_buffer_max": 200
     },
     {
-      "type": "TaskGeneratorAnyFree",
+      "type": "TaskGeneratorPoisson",
       "pick_ups": [[29,0], [30, 0], [31, 0], [3, 11], [3, 12], [3, 13], [15,10], [16, 10], [17, 10], [18, 10], [15, 13], [16, 13], [19, 13], [22, 13], [31, 14], [32, 14], [13, 24], [20, 28], [27, 24], [34, 24]],
       "drop_offs": [[12, 15], [12, 23], [19, 15], [19, 26], [21, 15], [21, 23], [26, 15], [26, 23], [28, 15], [28, 23], [33, 15], [33, 23], [35, 15], [35, 23]],
+      "average_tick_next": 70,
       "time_buffer_min": 10,
-      "time_buffer_max": 50
+      "time_buffer_max": 200
     },
     {
-      "type": "TaskGeneratorAnyFree",
+      "type": "TaskGeneratorPoisson",
       "pick_ups": [[12, 16], [12, 17], [12, 18], [12, 20], [12, 21], [12, 22], [19, 16], [19, 17], [19, 18], [19, 19], [19, 20], [19, 21], [19, 23], [19, 24], [19, 25], [21, 16], [21, 17], [21, 18], [21, 19], [21, 20], [21, 21], [21, 22], [26, 16], [26, 17], [26, 18], [26, 20], [26, 21], [26, 22], [28, 16], [28, 17], [28, 18], [28, 20], [28, 21], [28, 22], [33, 16], [33, 17], [33, 18], [33, 19], [33, 20], [33, 21], [33, 22], [35, 16], [35, 17], [35, 18], [35, 20], [35, 21], [35, 22]],
       "drop_offs": [[33, 3], [33, 4], [33, 5], [33, 6], [33, 7], [33, 9], [26, 2], [26, 4], [26, 8], [25, 10]],
+      "average_tick_next": 70,
       "time_buffer_min": 10,
-      "time_buffer_max": 50
+      "time_buffer_max": 200
     },
     {
-      "type": "TaskGeneratorAnyFree",
+      "type": "TaskGeneratorPoisson",
       "pick_ups": [[33, 3], [33, 4], [33, 5], [33, 6], [33, 7], [33, 9]],
       "drop_offs": [[26, 2], [26, 4], [26, 8], [25, 10]],
+      "average_tick_next": 70,
       "time_buffer_min": 10,
-      "time_buffer_max": 50
+      "time_buffer_max": 200
     }
   ],
   "planner": {
     "type": "PlannerCCBS"
   },
-  "visualize": "True",
+  "visualize": "False",
   "directed": "True",
   "turn_in_place": "True"
 }

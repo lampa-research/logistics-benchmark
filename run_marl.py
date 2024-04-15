@@ -42,7 +42,7 @@ for i in range(1):
     env_config = {
         "filename": CONFIG_FILE,
         "ep_len": 100,  # number of steps = tasks per episode
-        "max_tasks_per_agent": 10,
+        "max_queue_length": 10,
         "verbose": True,
         # "shared_reward": True,
         "log_dir": LOG_DIR,
