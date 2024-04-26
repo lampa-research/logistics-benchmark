@@ -50,9 +50,9 @@ class DispatcherClosestFree(Dispatcher):
         task_queue_len = {}
         for i in agent_indices:
             if self.agvs[i].task_in_work is None:
-                task_queue_len[i] = self.agvs[i].tasks.qsize()
+                task_queue_len[i] = len(self.agvs[i].tasks)
             else:
-                task_queue_len[i] = self.agvs[i].tasks.qsize() + 1
+                task_queue_len[i] = len(self.agvs[i].tasks) + 1
         min_queue_len = min(task_queue_len.values())
         agent_indices = [
             index for index, length in task_queue_len.items() if length == min_queue_len]
@@ -60,10 +60,10 @@ class DispatcherClosestFree(Dispatcher):
         # keep agent indices that have the shortest path
         path_len = {}
         for i in agent_indices:
-            if self.agvs[i].task_in_work is None and self.agvs[i].tasks.qsize() == 0:
+            if self.agvs[i].task_in_work is None and len(self.agvs[i].tasks) == 0:
                 path_len[i] = self.shortest_path_length[
                     self.env.agents[i].position][t.pick_up]
-            elif self.agvs[i].task_in_work is not None and self.agvs[i].tasks.qsize() == 0:
+            elif self.agvs[i].task_in_work is not None and len(self.agvs[i].tasks) == 0:
                 path_len[i] = self.shortest_path_length[
                     self.agvs[i].task_in_work.drop_off][t.pick_up]
             else:

@@ -1,4 +1,4 @@
-import queue
+from collections import deque
 
 
 class Task():
@@ -15,7 +15,7 @@ class Task():
 class AGV():
 
     def __init__(self):
-        self.tasks = queue.Queue()
+        self.tasks = deque()
         self.task_in_work = None  # Task((0,0), (0,0), 0)
         self.deadline = 0  # deadline for the task being executed
         self.going_to_safe_space = False
@@ -23,16 +23,16 @@ class AGV():
         self.delays = [] # a list of delays for completed tasks
 
     def assign_task(self, t: Task):
-        self.tasks.put(t)
+        self.tasks.append(t)
         self.last_task_in_queue = t
 
     def start_next_task(self):
-        if not self.tasks.empty():
-            t = self.tasks.get(0)
+        if len(self.tasks) > 0:
+            t = self.tasks.popleft()
             self.task_in_work = t
             self.deadline = t.deadline
             self.going_to_safe_space = False
-            if self.tasks.empty():
+            if len(self.tasks) == 0:
                 self.last_task_in_queue = None
             return t
         else:

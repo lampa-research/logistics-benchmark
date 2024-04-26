@@ -260,14 +260,14 @@ class Simulation():
     def step_agents(self):
         for i in range(len(self.env.agents)):
             # if task is completed and task queue is not empty, assign new task
-            if self.agvs[i].task_in_work == None and self.agvs[i].tasks.empty() == False:
+            if self.agvs[i].task_in_work == None and len(self.agvs[i].tasks) > 0:
                 self.agvs[i].start_next_task()
                 self.env.agents[i].target = self.agvs[i].task_in_work.pick_up
                 self.recalculate = True
                 print(
                     f"--New task is being assigned to agent {i}. Agent {i}  has new target: {self.env.agents[i].target}--")
                 # if agent has no task in work and no task in queue, new target = closest safe_space
-            elif self.agvs[i].tasks.empty() and self.agvs[i].task_in_work == None and self.agvs[i].going_to_safe_space == False:
+            elif len(self.agvs[i].tasks) == 0 and self.agvs[i].task_in_work == None and self.agvs[i].going_to_safe_space == False:
                 # find closest safe space
                 if len(self.layout.safe_spaces) > 0:
                     distance_to_safe_space = []
