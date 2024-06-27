@@ -1,7 +1,7 @@
 {
-  "map": "00_example_a.tmx",
-  "number_of_steps": 100,
-  "number_of_repetitions": 10,
+  "map": "04_uttendorf_02_01.tmx",
+  "number_of_steps": 300,
+  "number_of_repetitions": 1,
   "dispatcher": {
     "type": "DispatcherClosestFree"
   },
@@ -11,10 +11,9 @@
   },
   "task_generators": [
     {
-      "type": "TaskGeneratorPoisson",
-      "pick_ups": "pick_ups",
-      "drop_offs": "drop_offs",
-      "average_tick_next": 10,
+      "type": "TaskGeneratorAnyFree",
+      "pick_ups": "pick_up_drop_offs",
+      "drop_offs": "pick_up_drop_offs",
       "time_buffer_min": 10,
       "time_buffer_max": 50
     }
@@ -22,7 +21,7 @@
   "planner": {
     "type": "PlannerCCBS"
   },
-  "visualize": "False",
-  "directed": "False",
+  "visualize": "True",
+  "directed": "True",
   "turn_in_place": "True"
 }

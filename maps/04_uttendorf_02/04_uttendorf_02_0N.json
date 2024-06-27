@@ -1,0 +1,34 @@
+{
+  "map": "04_uttendorf_02_0N.tmx",
+  "number_of_steps": 300,
+  "number_of_repetitions": 1,
+  "dispatcher": {
+    "type": "DispatcherClosestFree"
+  },
+  "releaser": {
+    "type": "ReleaserPool",
+    "pool_size": 1
+  },
+  "task_generators": [
+    {
+      "type": "TaskGeneratorAnyFree",
+      "pick_ups": [[14, 15]],
+      "drop_offs": [[38, 30]],
+      "time_buffer_min": 10,
+      "time_buffer_max": 50
+    },
+    {
+      "type": "TaskGeneratorAnyFree",
+      "pick_ups": "pick_up_drop_offs",
+      "drop_offs": "pick_up_drop_offs",
+      "time_buffer_min": 10,
+      "time_buffer_max": 50
+    }
+  ],
+  "planner": {
+    "type": "PlannerCCBS"
+  },
+  "visualize": "True",
+  "directed": "True",
+  "turn_in_place": "True"
+}
